@@ -2,9 +2,11 @@
 # https://www.geekfactory.mx
 #
 # Ejemplo para conectarse a una red WiFi en modo estación (STA) usando
-# MicroPython. Este programa puede colocarse en el archivo boot.py en el
-# sistema de archivos de la Raspberry Pi Pico W. De esta forma al ejecutar
-# el archivo main.py ya tendremos activa la interfaz inalámbrica.
+# MicroPython.
+#
+# NOTA: Este programa puede guardarse como boot.py. MicroPython ejecuta
+# este archivo automáticamente al iniciar la Raspberry Pi Pico W, por lo
+# que cuando se ejecute main.py la conexión WiFi ya estará establecida.
 
 # Importar los módulos de python usados por este programa
 import network
@@ -18,13 +20,13 @@ PASSWORD = 'geekfactorymx'
 
 # Creamos el objeto que nos permitirá acceder a las funcionalidades
 # de la interfaz inalámbrica. Usamos el parámetro network.STA_IF para indicar que
-# la interfaz WiFi se utilizará en modo STATION para conectarnos a un router.
+# la interfaz WiFi se utilizará en modo estación (STA) para conectarnos a un router.
 wlan = network.WLAN(network.STA_IF)
 
 # Activamos el hardware de la interfaz WiFi
 wlan.active(True)
 
-print(f'Conectando a WiFi {SSID}',end='')
+print(f'Conectando a WiFi {SSID}', end='')
 
 # Damos la instrucción de conexión al access point que tenemos configurado
 wlan.connect(SSID, PASSWORD)
@@ -33,7 +35,7 @@ wlan.connect(SSID, PASSWORD)
 connect_start = time.ticks_ms()
 # Iniciamos un ciclo en el que revisamos cada segundo si se logró la conexión
 while not wlan.isconnected():
-    print('.',end='')
+    print('.', end='')
     time.sleep(1)
     if time.ticks_diff(time.ticks_ms(), connect_start) >= 30_000:
         break
@@ -49,6 +51,6 @@ if wlan.isconnected():
 else:
     print(f'No se puede conectar al AP WiFi {SSID}')
     # En caso de que no logremos conectarnos podemos esperar unos segundos
-    # y posteriormente realizar un "soft reset" para intentarlo de nuevo.
+    # y posteriormente reiniciar la tarjeta para intentarlo de nuevo.
     time.sleep(10)
     machine.reset()
