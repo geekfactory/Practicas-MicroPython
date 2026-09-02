@@ -1,31 +1,52 @@
 # GEEK FACTORY - Dale vuelo a tus proyectos
 # https://www.geekfactory.mx
 #
-# Ejemplo de sensor analógico LM35DZ con Raspberry Pi Pico y lenguaje de programación
-# micropython.
+# Ejemplo para leer un sensor de temperatura LM35DZ utilizando una
+# Raspberry Pi Pico y MicroPython.
 #
-from machine import ADC
+import machine
 import time
 
-# objeto utilizado para acceder al pin analógico donde conectaremos el sensor de temperatura
-tempadc = ADC(0)
+# Objeto para acceder al ADC donde está conectado el LM35DZ
+pin_adc = machine.ADC(0)
 
-# Función para leer sensor de temperatura LM35DZ
-#
-# Esta función lee el sensor de temperatura 10 veces y calcula el promedio de las lecturas,
-# retornando un valor mas preciso libre de ruido.
-def lm35_read_temperature():
-    temp = 0
-    for i in range(0,10):
-        temp += tempadc.read_u16() * 330 / 65536
-        time.sleep_us(100)
-    return temp/10
 
-# ciclo principal del programa
+def lm35_read_temperature(sensor_adc, vref = 3300, samples = 10):
+    """
+    Función para leer un sensor de temperatura LM35DZ.
+
+    :param sensor_adc: Objeto machine.ADC asociado al sensor.
+    :param vref: Voltaje de referencia del ADC en milivolts.
+    :param samples: Número de muestras para promediar.
+    
+    :return: Temperatura medida en grados centígrados.
+    """
+    total = 0
+    SAMPLE_WAIT_TIME = 20
+
+    # Tomar varias mediciones del ADC
+    for _ in range(samples):
+        total += sensor_adc.read_u16()
+        time.sleep_ms(SAMPLE_WAIT_TIME)
+        
+    # Calcular el promedio de las lecturas
+    readings_average = total / samples
+    
+    # Convertir la lectura promedio a milivolts
+    voltage_mv = (readings_average * vref) / 65535
+    
+    # El LM35 entrega 10 mV por cada grado centígrado
+    return voltage_mv / 10.0
+
+
+# Ciclo principal del programa
 while True:
-    # llamar a la función para leer el sensor e imprimir a la terminal
-    temperature = lm35_read_temperature()
-    print(f"Temperatura leida por LM35DZ: {temperature}")
-    # esperar un segundo entre lecturas para no saturar la pantalla
+    # Llamar a la función para leer el sensor
+    temperature = lm35_read_temperature(pin_adc)
+    
+    # Imprimir a la terminal
+    print(f"Temperatura leida por LM35DZ: {temperature:.1f}")
+    
+    # Esperar un segundo entre lecturas para no saturar la pantalla
     time.sleep(1)
     
