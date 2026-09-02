@@ -38,22 +38,32 @@ tempadc = machine.ADC(0)
 mqttc = MQTTClient(CLIENT_ID, SERVER, PORT, USER, KEY)
 
 
-def read_temperature():
+def lm35_read_temperature(sensor_adc, vref = 3300, samples = 10):
     """
-    Definimos una función que lee el sensor de temperatura LM35DZ conectado en
-    el pin analógico 0.
+    Función para leer un sensor de temperatura LM35DZ.
+
+    :param sensor_adc: Objeto machine.ADC asociado al sensor.
+    :param vref: Voltaje de referencia del ADC en milivolts.
+    :param samples: Número de muestras para promediar.
     
-    :return: Temperatura medida por el sensor en grados centígrados.
+    :return: Temperatura medida en grados centígrados.
     """
-    ADC_REFERENCE_MV = 3300
     total = 0
+    SAMPLE_WAIT_TIME = 20
+
+    # Tomar varias mediciones del ADC
+    for _ in range(samples):
+        total += sensor_adc.read_u16()
+        time.sleep_ms(SAMPLE_WAIT_TIME)
+        
+    # Calcular el promedio de las lecturas
+    readings_average = total / samples
     
-    for _ in range(10):
-        total += tempadc.read_u16() * ADC_REFERENCE_MV / 65536
-        time.sleep_us(100)
-    # El LM35 entrega 10 mV por cada grado centígrado.
-    voltage_mv = total / 10
-    return voltage_mv / 10
+    # Convertir la lectura promedio a milivolts
+    voltage_mv = (readings_average * vref) / 65535
+    
+    # El LM35 entrega 10 mV por cada grado centígrado
+    return voltage_mv / 10.0
 
 
 # conectar al broker MQTT
@@ -69,7 +79,7 @@ while True:
     # revisar si han transcurrido más de 10 segundos desde la última actualización
     if time.ticks_diff(now, last_publish) >= UPDATE_INTERVAL:
         # llamar a la función que definimos para leer el sensor
-        temperature = read_temperature()
+        temperature = lm35_read_temperature(tempadc)
         print(f'Publicando temperatura {temperature} en {PUB_TOPIC}')
         # realizar la publicacion de los datos
         mqttc.publish(PUB_TOPIC, f"{temperature:.1f}".encode())
